@@ -20,6 +20,7 @@ class UserProfile(db.Model):
     user_id = db.Column(db.Integer , db.ForeignKey('user.id'), unique=True , nullable=False)
 
 
+# Crud Operations for user
 
 @app.route('/users', methods=['GET'])
 def get_users():
@@ -57,6 +58,62 @@ def delete_user(user_id):
     db.session.commit()
     return jsonify({'message': 'User deleted successfully'})
 
+# Crud Operations for UserProfile
+
+
+@app.route('/user_profile/<int:user_id>', methods=['GET'])
+def get_user_profile(user_id):
+    user = User.query.get_or_404(user_id)
+    profile = user.profile
+
+    if not profile:
+        return jsonify({'message': 'UserProfile not found for the user'}), 404
+
+    profile_data = {'id': profile.id, 'bio': profile.bio, 'user_id': profile.user_id}
+    return jsonify({'user_profile': profile_data}), 200
+
+@app.route('/user_profile', methods=['POST'])
+def create_user_profile():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    user = User.query.get_or_404(user_id)
+
+    # Check if UserProfile already exists for the user
+    if user.profile:
+        return jsonify({'message': 'UserProfile already exists for the user'}), 400
+
+    new_profile = UserProfile(bio=data['bio'], user=user)
+    db.session.add(new_profile)
+    db.session.commit()
+
+    return jsonify({'message': 'UserProfile created successfully', 'user_profile_id': new_profile.id}), 201
+
+@app.route('/user_profile/<int:user_id>', methods=['PUT'])
+def update_user_profile(user_id):
+    user = User.query.get_or_404(user_id)
+    profile = user.profile
+
+    if not profile:
+        return jsonify({'message': 'UserProfile not found for the user'}), 404
+
+    data = request.get_json()
+    profile.bio = data['bio']
+    db.session.commit()
+
+    return jsonify({'message': 'UserProfile updated successfully'}), 200
+
+@app.route('/user_profile/<int:user_id>', methods=['DELETE'])
+def delete_user_profile(user_id):
+    user = User.query.get_or_404(user_id)
+    profile = user.profile
+
+    if not profile:
+        return jsonify({'message': 'UserProfile not found for the user'}), 404
+
+    db.session.delete(profile)
+    db.session.commit()
+
+    return jsonify({'message': 'UserProfile deleted successfully'}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
